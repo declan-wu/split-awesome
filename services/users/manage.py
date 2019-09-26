@@ -1,9 +1,13 @@
-from flask.cli import FlaskGroup
-from project import app, db  
 import sys
 import unittest
 
-cli = FlaskGroup(app)
+from flask.cli import FlaskGroup
+
+from project import create_app, db  
+from project.api.models import User 
+
+app = create_app() 
+cli = FlaskGroup(create_app=create_app) 
 
 
 @cli.command('recreate_db')
@@ -21,6 +25,7 @@ def test():
     if result.wasSuccessful():
         return 0
     sys.exit(result)
+
 
 if __name__ == '__main__':
     cli()
