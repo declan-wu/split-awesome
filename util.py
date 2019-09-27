@@ -5,7 +5,7 @@ from typing import List
 
 def base64_to_img(base64_str: str, file_path: str) -> None:
     """Convert base64 string into image and stores it in file_path"""
-    with open("file_path", "wb") as fh:
+    with open(file_path, "wb") as fh:
         fh.write(base64.b64decode(base64_str))
 
 def enhance_image(img_path: str, new_img_path: str) -> None:
@@ -48,13 +48,9 @@ if __name__ == '__main__':
     with open("static/images/test.png", "rb") as image_file:
         base64_str = base64.b64encode(image_file.read())
     img_path = "./static/images/example.png"
-    # new_img_path = "static/images/new_image.png"
-    # bucket = "split-wise-receipts-lhl"
-    # s3_filename = "new_image.png"
-
-    base64_to_img(base64_str, img_path)
-    # enhance_image(img_path, new_img_path)
-    # upload_to_s3(new_img_path, bucket, s3_filename)
-    # res_arr = detect_text_from_img(bucket, s3_filename)
-    # food_items = {"result": res_arr}
-    # print (food_items)
+    new_img_path = "./static/images/new_image.png"
+    bucket = "split-wise-receipts-lhl"
+    s3_filename = "new_image.png"
+    res_arr = img_to_text(base64_str, img_path, new_img_path, bucket, s3_filename)
+    food_items = {"result": res_arr}
+    print (food_items)
