@@ -51,7 +51,7 @@ def snap():
     img_path = "./static/images/example.png"
     new_img_path = "./static/images/new_image.png"
     # bucket = "split-wise-receipts-lhl"
-    bucket = "imagessplitus"
+    bucket = "split-wise-receipts-lhl"
     s3_filename = "new_image.png"
     parsed_res = img_to_json(base64_str, img_path, new_img_path, bucket, s3_filename)
     # parsed_res = fake_response #FIXME:
