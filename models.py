@@ -46,3 +46,11 @@ class Item(db.Model):
         self.quantity = quantity
         self.name = name
         self.unit_price = unit_price
+    
+    def to_json(self):
+        return {
+            'id': self.id, 
+            'quantity': self.quantity,
+            'name': self.name,
+            'unit_price': self.unit_price
+        }

@@ -41,25 +41,26 @@ def snap():
         # #FIXME:
         parsed_res = fake_response
         # create new room instance in our database 
-        new_bill = Bill(date.today())
+        new_bill = Bill()
         new_bill.items = []
         
         for line in parsed_res:
             temp_item = Item(line["quantity"], line["name"], line["unit_price"])
             new_bill.items.append(temp_item)
-            session.add(temp_item)
+            db.session.add(temp_item)
         
-        session.add(new_bill)
-        session.flush()
-        session.refresh(new_bill)
+        db.session.add(new_bill)
+        db.session.flush()
+        db.session.refresh(new_bill)
+        db.session.commit()
         room_id = new_bill.id 
         res = {"type": action_types["GOTO_ROOM"], "payload": room_id}
         # res = {"type": action_types["GOTO_ROOM"], "payload": "need to parse the response string"}
-        return jsonify( res )
+        return jsonify(res)
     except:
         #FIXME: this should be handling input form not correct 
         res = {"type": action_types["BAD_REQUEST"]}
-        return jsonify( res )
+        return jsonify(res)
 
 #FIXME: RN we say ROOM/QR page is in the same page as the food items page. 
 @app.route('/room/<int:room_id>/', methods=['GET', 'POST'])
@@ -68,15 +69,11 @@ def room_instance(room_id):
         #TODO: using websocket, or dynamically update the menu items / database
         pass
     else:
-        food_items = session.query(Item) \
+        food_items = db.session.query(Item) \
             .join(Bill) \
             .filter(Bill.id == room_id) \
             .all()
-        res = {"food_items" : []}
-        for item in food_items:
-            line = {"quantity": item.quantity, "name": item.name, "unit_price": item.unit_price}
-            res["food_items"].append(line)
-        print(res)
+        res = {"food_items" : [item.to_json() for item in food_items]}
         return jsonify(res)
 
 if __name__ == '__main__':
