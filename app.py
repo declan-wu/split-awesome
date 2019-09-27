@@ -44,10 +44,37 @@ def signup():
         return jsonify(res)
 
 
+# @app.route('/snap', methods=['POST'])
+# def snap():
+#     base64_str = request.form.get('image_data', "")
+#     img_path = "./static/images/example.png"
+#     new_img_path = "./static/images/new_image.png"
+#     bucket = "split-wise-receipts-lhl"
+#     s3_filename = "new_image.png"
+#     parsed_res = img_to_json(base64_str, img_path, new_img_path, bucket, s3_filename)
+#     print(parsed_res)
+#     # parsed_res = fake_response #FIXME:
+#     # new_bill = Bill()
+#     # new_bill.items = []
+    
+#     # for line in parsed_res:
+#     #     temp_item = Item(line["quantity"], line["name"], line["unit_price"])
+#     #     new_bill.items.append(temp_item)
+#     #     db.session.add(temp_item)
+    
+#     # db.session.add(new_bill)
+#     # db.session.flush()
+#     # db.session.refresh(new_bill)
+#     # db.session.commit()
+#     # room_id = new_bill.id 
+#     res = {"type": action_types["GOTO_ROOM"], "payload": 1}
+#     return jsonify(res)
+
+
 @app.route('/snap', methods=['POST'])
 def snap():
     try:
-        base64_str = request.form['image_data']
+        base64_str = request.form.get('image_data', "")
         img_path = "./static/images/example.png"
         new_img_path = "./static/images/new_image.png"
         bucket = "split-wise-receipts-lhl"
