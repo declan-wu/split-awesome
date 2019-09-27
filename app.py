@@ -11,9 +11,7 @@ db = SQLAlchemy(app)
 from models import Bill, Item, User
 from util import img_to_text
 from action_types import action_types
-
-#FIXME: 
-from fake_response import fake_response
+from fake_response import fake_response #FIXME: 
 
 @app.route('/', methods=['GET'])
 def index():
