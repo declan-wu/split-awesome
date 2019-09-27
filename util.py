@@ -45,15 +45,16 @@ def img_to_text(base64_str: str, img_path: str, new_img_path: str, bucket: str, 
 
 # for testing purpose
 if __name__ == '__main__':
-    with open("images/example.png", "rb") as image_file:
+    with open("static/images/test.png", "rb") as image_file:
         base64_str = base64.b64encode(image_file.read())
-    img_path = "images/example.png"
-    new_img_path = "images/new_image.png"
-    bucket = "split-wise-receipts-lhl"
-    s3_filename = "new_image.png"
+    img_path = "./static/images/example.png"
+    # new_img_path = "static/images/new_image.png"
+    # bucket = "split-wise-receipts-lhl"
+    # s3_filename = "new_image.png"
+
     base64_to_img(base64_str, img_path)
-    enhance_image(img_path, new_img_path)
-    upload_to_s3(new_img_path, bucket, s3_filename)
-    res_arr = detect_text_from_img(bucket, s3_filename)
-    food_items = {"result": res_arr}
-    print (food_items)
+    # enhance_image(img_path, new_img_path)
+    # upload_to_s3(new_img_path, bucket, s3_filename)
+    # res_arr = detect_text_from_img(bucket, s3_filename)
+    # food_items = {"result": res_arr}
+    # print (food_items)
