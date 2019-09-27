@@ -34,7 +34,6 @@ def detect_text_from_img(bucket: str, s3_filename: str) -> List[str]:
     for text in textDetections:
         if text['Type'] == 'LINE':
             ret.append(text['DetectedText'])
-    print(ret)
     return ret
 
 def single_float_regex(item):

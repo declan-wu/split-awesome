@@ -46,7 +46,7 @@ def signup():
 
 @app.route('/snap', methods=['POST'])
 def snap():
-    print('received image')
+    #TODO: randomize image name
     base64_str = request.form.get('image_data', '')
     img_path = "./static/images/example.png"
     new_img_path = "./static/images/new_image.png"
@@ -54,7 +54,6 @@ def snap():
     bucket = "imagessplitus"
     s3_filename = "new_image.png"
     parsed_res = img_to_json(base64_str, img_path, new_img_path, bucket, s3_filename)
-    print("done aws")
     # parsed_res = fake_response #FIXME:
     new_bill = Bill()
     new_bill.items = []
@@ -63,13 +62,12 @@ def snap():
         temp_item = Item(line["quantity"], line["item"], line["price"]) #FIXME: to unit_price
         new_bill.items.append(temp_item)
         db.session.add(temp_item)
-    
+ 
     db.session.add(new_bill)
     db.session.flush()
     db.session.refresh(new_bill)
     db.session.commit()
     room_id = new_bill.id 
-    print("done db")
     res = {"type": action_types["GOTO_ROOM"], "payload": room_id}
     return jsonify(res)
 
