@@ -34,6 +34,7 @@ def detect_text_from_img(bucket: str, s3_filename: str) -> List[str]:
     for text in textDetections:
         if text['Type'] == 'LINE':
             ret.append(text['DetectedText'])
+    print(ret)
     return ret
 
 def single_float_regex(item):
@@ -103,12 +104,13 @@ def parser(test_arr):
 def img_to_json(base64_str: str, img_path: str, new_img_path: str, bucket: str, s3_filename: str):
     """Convert a base64 string and extract useful information using AWS Rekognition"""
     base64_to_img(base64_str, img_path)
-    enhance_image(img_path, new_img_path)
-    upload_to_s3(new_img_path, bucket, s3_filename)
+    upload_to_s3(img_path, bucket, s3_filename)
+    # enhance_image(img_path, new_img_path)
+    # upload_to_s3(new_img_path, bucket, s3_filename)
     #TODO: apply regex to process the response from AWS
     line_arr = detect_text_from_img(bucket, s3_filename)
     return parser(line_arr)
 
 # for testing purpose
-if __name__ == '__main__':
-    print(img_to_json())
+# if __name__ == '__main__':
+#     print(img_to_json())

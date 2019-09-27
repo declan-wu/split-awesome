@@ -9,7 +9,7 @@ app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 db = SQLAlchemy(app)
 
 from models import Bill, Item, User
-from util import img_to_json
+from util import img_to_json, base64_to_img, enhance_image
 from action_types import action_types
 from fake_response import fake_response
 
@@ -44,62 +44,65 @@ def signup():
         return jsonify(res)
 
 
-# @app.route('/snap', methods=['POST'])
-# def snap():
-#     base64_str = request.form.get('image_data', "")
-#     img_path = "./static/images/example.png"
-#     new_img_path = "./static/images/new_image.png"
-#     bucket = "split-wise-receipts-lhl"
-#     s3_filename = "new_image.png"
-#     parsed_res = img_to_json(base64_str, img_path, new_img_path, bucket, s3_filename)
-#     print(parsed_res)
-#     # parsed_res = fake_response #FIXME:
-#     # new_bill = Bill()
-#     # new_bill.items = []
-    
-#     # for line in parsed_res:
-#     #     temp_item = Item(line["quantity"], line["name"], line["unit_price"])
-#     #     new_bill.items.append(temp_item)
-#     #     db.session.add(temp_item)
-    
-#     # db.session.add(new_bill)
-#     # db.session.flush()
-#     # db.session.refresh(new_bill)
-#     # db.session.commit()
-#     # room_id = new_bill.id 
-#     res = {"type": action_types["GOTO_ROOM"], "payload": 1}
-#     return jsonify(res)
-
-
 @app.route('/snap', methods=['POST'])
 def snap():
-    try:
-        base64_str = request.form.get('image_data', "")
-        img_path = "./static/images/example.png"
-        new_img_path = "./static/images/new_image.png"
-        bucket = "split-wise-receipts-lhl"
-        s3_filename = "new_image.png"
-        parsed_res = img_to_json(base64_str, img_path, new_img_path, bucket, s3_filename)
-        # parsed_res = fake_response #FIXME:
-        new_bill = Bill()
-        new_bill.items = []
+    print('received image')
+    base64_str = request.form.get('image_data', '')
+    img_path = "./static/images/example.png"
+    new_img_path = "./static/images/new_image.png"
+    # bucket = "split-wise-receipts-lhl"
+    bucket = "imagessplitus"
+    s3_filename = "new_image.png"
+    parsed_res = img_to_json(base64_str, img_path, new_img_path, bucket, s3_filename)
+    print("done aws")
+    # parsed_res = fake_response #FIXME:
+    new_bill = Bill()
+    new_bill.items = []
+    
+    for line in parsed_res:
+        temp_item = Item(line["quantity"], line["item"], line["price"]) #FIXME: to unit_price
+        new_bill.items.append(temp_item)
+        db.session.add(temp_item)
+    
+    db.session.add(new_bill)
+    db.session.flush()
+    db.session.refresh(new_bill)
+    db.session.commit()
+    room_id = new_bill.id 
+    print("done db")
+    res = {"type": action_types["GOTO_ROOM"], "payload": room_id}
+    return jsonify(res)
+
+
+# @app.route('/snap', methods=['POST'])
+# def snap():
+#     try:
+#         base64_str = request.form.get('image_data', "")
+#         img_path = "./static/images/example.png"
+#         new_img_path = "./static/images/new_image.png"
+#         bucket = "split-wise-receipts-lhl"
+#         s3_filename = "new_image.png"
+#         parsed_res = img_to_json(base64_str, img_path, new_img_path, bucket, s3_filename)
+#         # parsed_res = fake_response #FIXME:
+#         new_bill = Bill()
+#         new_bill.items = []
         
-        for line in parsed_res:
-            temp_item = Item(line["quantity"], line["name"], line["unit_price"])
-            new_bill.items.append(temp_item)
-            db.session.add(temp_item)
+#         for line in parsed_res:
+#             temp_item = Item(line["quantity"], line["name"], line["unit_price"])
+#             new_bill.items.append(temp_item)
+#             db.session.add(temp_item)
         
-        db.session.add(new_bill)
-        db.session.flush()
-        db.session.refresh(new_bill)
-        db.session.commit()
-        room_id = new_bill.id 
-        res = {"type": action_types["GOTO_ROOM"], "payload": room_id}
-        return jsonify(res)
-    except:
-        #FIXME: this should handle wrong input form data
-        res = {"type": action_types["FORM_DATA_FIELD_INCORRECT"]}
-        return jsonify(res)
+#         db.session.add(new_bill)
+#         db.session.flush()
+#         db.session.refresh(new_bill)
+#         db.session.commit()
+#         room_id = new_bill.id 
+#         res = {"type": action_types["GOTO_ROOM"], "payload": room_id}
+#         return jsonify(res)
+#     except:
+#         #FIXME: this should handle wrong input form data
+#         res = {"type": action_types["FORM_DATA_FIELD_INCORRECT"]}
+#         return jsonify(res)
 
 #FIXME: we don't have a seperate route for the room QR page yet.  
 @app.route('/room/<int:room_id>/', methods=['GET', 'POST'])
