@@ -22,6 +22,7 @@ def index():
         "GET /room/<room_id>": "response with JSON data with items information, right now it's fake data as we are working on regex parsing"
         }
     }
+    return jsonify(res)
 
 @app.route('/login', methods=['POST'])
 def login():
@@ -30,6 +31,7 @@ def login():
         return jsonify(res)
     except:
         res = {"type" : "LOGIN_FAILED"} #FIXME: 
+        return jsonify(res)
 
 @app.route('/signup', methods=['POST'])
 def signup():
@@ -39,6 +41,7 @@ def signup():
         return jsonify(res)
     except:
         res = {"type" : "SIGNUP_FAILED"} #FIXME:
+        return jsonify(res)
 
 
 @app.route('/snap', methods=['POST'])
