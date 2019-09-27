@@ -11,23 +11,35 @@ db = SQLAlchemy(app)
 from models import Bill, Item, User
 from util import img_to_text
 from action_types import action_types
-from fake_response import fake_response #FIXME: 
+from fake_response import fake_response
 
 @app.route('/', methods=['GET'])
 def index():
-    return "hello"
+    res = {"Methods allowed on this API server" : {
+        "POST /login": "response with an action type, if no error, should be 'GOTO_SNAP_PAGE'",
+        "POST /signup": "response with an action type, if no error, should be 'GOTO_SNAP_PAGE'", 
+        "POST /snap": "form data field expecting: 'image_data', response with action types, with payload as room number",
+        "GET /room/<room_id>": "response with JSON data with items information, right now it's fake data as we are working on regex parsing"
+        }
+    }
 
 @app.route('/login', methods=['POST'])
 def login():
-    #FIXME: need to add error handling here, right now, it's we just redirect user to snap page
-    res = {"type" : action_types["GOTO_SNAP_PAGE"]}
-    return jsonify(res)
+    try: 
+        res = {"type" : action_types["GOTO_SNAP_PAGE"]}
+        return jsonify(res)
+    except:
+        res = {"type" : "LOGIN_FAILED"} #FIXME: 
 
 @app.route('/signup', methods=['POST'])
 def signup():
-    #TODO: handle input form data and insert it into our database
-    res = {"type" : action_types["GOTO_SNAP_PAGE"]}
-    return jsonify(res)
+    try:
+        #TODO: handle input form data and insert it into our database
+        res = {"type" : action_types["GOTO_SNAP_PAGE"]}
+        return jsonify(res)
+    except:
+        res = {"type" : "SIGNUP_FAILED"} #FIXME:
+
 
 @app.route('/snap', methods=['POST'])
 def snap():
@@ -38,8 +50,7 @@ def snap():
         # bucket = "split-wise-receipts-lhl"
         # s3_filename = "new_image.png"
         # parsed_res = img_to_text(base64_str, img_path, new_img_path, bucket, s3_filename)
-        # #FIXME:
-        parsed_res = fake_response
+        parsed_res = fake_response #FIXME:
         # create new room instance in our database 
         new_bill = Bill()
         new_bill.items = []
@@ -55,14 +66,13 @@ def snap():
         db.session.commit()
         room_id = new_bill.id 
         res = {"type": action_types["GOTO_ROOM"], "payload": room_id}
-        # res = {"type": action_types["GOTO_ROOM"], "payload": "need to parse the response string"}
         return jsonify(res)
     except:
-        #FIXME: this should be handling input form not correct 
-        res = {"type": action_types["BAD_REQUEST"]}
+        #FIXME: this should handle wrong input form data
+        res = {"type": action_types["FORM_DATA_FIELD_INCORRECT"]}
         return jsonify(res)
 
-#FIXME: RN we say ROOM/QR page is in the same page as the food items page. 
+#FIXME: we don't have a seperate route for the room QR page yet.  
 @app.route('/room/<int:room_id>/', methods=['GET', 'POST'])
 def room_instance(room_id):
     if request.method == 'POST':
