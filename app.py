@@ -9,7 +9,7 @@ app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 db = SQLAlchemy(app)
 
 from models import Bill, Item, User
-from util import img_to_json, base64_to_img, enhance_image
+from util import img_to_json
 from action_types import action_types
 from fake_response import fake_response
 
@@ -48,13 +48,7 @@ def signup():
 def snap():
     #TODO: randomize image name
     base64_str = request.form.get('image_data', '')
-    img_path = "./static/images/example.png"
-    new_img_path = "./static/images/new_image.png"
-    # bucket = "split-wise-receipts-lhl"
-    bucket = "split-wise-receipts-lhl"
-    s3_filename = "new_image.png"
-    parsed_res = img_to_json(base64_str, img_path, new_img_path, bucket, s3_filename)
-    # parsed_res = fake_response #FIXME:
+    parsed_res = img_to_json(base64_str)
     new_bill = Bill()
     new_bill.items = []
     
