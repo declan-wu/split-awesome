@@ -95,7 +95,6 @@ def img_to_json(base64_str):
     return parser(line_arr)
 
 if __name__ == '__main__':
-    file_path = "./static/images/test.png"
     with open("./static/images/example.png", "rb") as image_file:
         base64_str = base64.b64encode(image_file.read())
     print(img_to_json(base64_str))

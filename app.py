@@ -1,6 +1,7 @@
 import os
 from flask import Flask, request, jsonify
 from flask_sqlalchemy import SQLAlchemy
+import base64
 
 app = Flask(__name__)
 
@@ -46,12 +47,16 @@ def signup():
 
 @app.route('/snap', methods=['POST'])
 def snap():
-    print("I'm in snap!!!!!!!!!!!")
     #TODO: randomize image name
     base64_str = request.form.get('image_data', '')
-    print(base64_str)
+    # print("---------------test base64 string not empty---------------")
+    # print(base64_str)
+    # print("---------------test if base64 string convert to image---------------")
+    # with open("./static/images/test.png", "wb") as image_file:
+    #     image_file.write(base64.b64decode(base64_str))
     parsed_res = img_to_json(base64_str)
-    print("before seeding db")
+    # print("--------------- test json response from aws ---------------")
+    # print(parsed_res)
     new_bill = Bill()
     new_bill.items = []
     
@@ -65,6 +70,7 @@ def snap():
     db.session.refresh(new_bill)
     db.session.commit()
     room_id = new_bill.id 
+    # room_id = 1
     res = {"type": action_types["GOTO_ROOM"], "payload": room_id}
     return jsonify(res)
 
