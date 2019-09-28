@@ -46,9 +46,12 @@ def signup():
 
 @app.route('/snap', methods=['POST'])
 def snap():
+    print("I'm in snap!!!!!!!!!!!")
     #TODO: randomize image name
     base64_str = request.form.get('image_data', '')
+    print(base64_str)
     parsed_res = img_to_json(base64_str)
+    print("before seeding db")
     new_bill = Bill()
     new_bill.items = []
     
@@ -56,7 +59,7 @@ def snap():
         temp_item = Item(line["quantity"], line["item"], line["price"]) #FIXME: to unit_price
         new_bill.items.append(temp_item)
         db.session.add(temp_item)
- 
+
     db.session.add(new_bill)
     db.session.flush()
     db.session.refresh(new_bill)
