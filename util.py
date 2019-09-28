@@ -87,6 +87,7 @@ def detect_labels_local_file(base64_str):
     for text in textDetections:
         if text['Type'] == 'LINE':
             ret.append(text['DetectedText'])
+    # print(ret)
     return ret
 
 def img_to_json(base64_str):
