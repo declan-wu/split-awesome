@@ -78,7 +78,7 @@ def parser(test_arr):
 
 def detect_labels_local_file(base64_str):
     encoded_str = base64.b64decode(base64_str)
-    client=boto3.client('rekognition')
+    client=boto3.client('rekognition', region_name='us-east-1')
     response = client.detect_text(Image={'Bytes': encoded_str})
     textDetections=response['TextDetections']
     total_words_detected =  len(textDetections)

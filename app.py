@@ -48,7 +48,7 @@ def signup():
 @app.route('/snap', methods=['POST'])
 def snap():
     #TODO: randomize image name
-    base64_str = request.form.get('image_data', '')
+    base64_stfr = request.form.get('image_data', '')
     # print("---------------test base64 string not empty---------------")
     # print(base64_str)
     # print("---------------test if base64 string convert to image---------------")
