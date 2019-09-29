@@ -1,11 +1,14 @@
 import os
 from flask import Flask, request, jsonify, redirect
 from flask_sqlalchemy import SQLAlchemy
+from flask_cors import CORS, cross_origin
 import base64
 
 app = Flask(__name__)
+cors = CORS(app)
 
 app.config.from_object(os.environ['APP_SETTINGS'])
+app.config['CORS_HEADERS'] = 'Content-Type'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 db = SQLAlchemy(app)
 
@@ -15,6 +18,7 @@ from action_types import action_types
 from fake_response import fake_response
 
 @app.route('/', methods=['GET'])
+@cross_origin()
 def index():
     res = {"Methods allowed on this API server" : {
         "POST /login": "response with an action type, if no error, should be 'GOTO_SNAP_PAGE'",
@@ -26,101 +30,72 @@ def index():
     return jsonify(res)
 
 @app.route('/login', methods=['POST'])
+@cross_origin()
 def login():
     try: 
-        res = {"type" : action_types["GOTO_SNAP_PAGE"]}
+        #TODO: actual login
+        res = {"type" : action_types["REDIRECT"], "payload": "/snap"}
         return jsonify(res)
     except:
-        res = {"type" : "LOGIN_FAILED"} #FIXME: 
+        res = {"type" : "ERROR", "payload": "Fail to log in"} 
         return jsonify(res)
 
 @app.route('/signup', methods=['POST'])
+@cross_origin()
 def signup():
     try:
-        #TODO: handle input form data and insert it into our database
-        res = {"type" : action_types["GOTO_SNAP_PAGE"]}
+        #TODO: actual signup
+        res = {"type" : action_types["REDIRECT"], "payload": "/snap"}
         return jsonify(res)
     except:
-        res = {"type" : "SIGNUP_FAILED"} #FIXME:
+        res = {"type" : "ERROR", "payload": "Fail to sign up"} 
         return jsonify(res)
 
 
 @app.route('/snap', methods=['POST'])
+@cross_origin()
 def snap():
-    #TODO: randomize image name
-    base64_str = request.form.get('image_data', '')
-    # print("---------------test base64 string not empty---------------")
-    # print(base64_str)
-    # print("---------------test if base64 string convert to image---------------")
-    # with open("./static/images/test.png", "wb") as image_file:
-    #     image_file.write(base64.b64decode(base64_str))
-    parsed_res = img_to_json(base64_str)
-    # print("--------------- test json response from aws ---------------")
-    # print(parsed_res)
-    new_bill = Bill()
-    new_bill.items = []
-    
-    for line in parsed_res:
-        quantity = line["quantity"]
-        unit_price = round(float(line["price"]) / float(quantity), 2)
-        name = line["item"]
-        for i in range(int(quantity)):
-            temp_item = Item(name, unit_price)
-            new_bill.items.append(temp_item)
-            db.session.add(temp_item)
-
-    db.session.add(new_bill)
-    db.session.flush()
-    db.session.refresh(new_bill)
-    db.session.commit()
-    room_id = new_bill.id 
-    # room_id = 1
-    return redirect(f"http://127.0.0.1:5000/room/{room_id}", code=303)
-
-
-# @app.route('/snap', methods=['POST'])
-# def snap():
-#     try:
-#         base64_str = request.form.get('image_data', "")
-#         img_path = "./static/images/example.png"
-#         new_img_path = "./static/images/new_image.png"
-#         bucket = "split-wise-receipts-lhl"
-#         s3_filename = "new_image.png"
-#         parsed_res = img_to_json(base64_str, img_path, new_img_path, bucket, s3_filename)
-#         # parsed_res = fake_response #FIXME:
-#         new_bill = Bill()
-#         new_bill.items = []
+    try:
+        #TODO: randomize image name
+        base64_str = request.form.get('image_data', '')
+        parsed_res = img_to_json(base64_str)
+        new_bill = Bill()
+        new_bill.items = []
         
-#         for line in parsed_res:
-#             temp_item = Item(line["quantity"], line["name"], line["unit_price"])
-#             new_bill.items.append(temp_item)
-#             db.session.add(temp_item)
-        
-#         db.session.add(new_bill)
-#         db.session.flush()
-#         db.session.refresh(new_bill)
-#         db.session.commit()
-#         room_id = new_bill.id 
-#         res = {"type": action_types["GOTO_ROOM"], "payload": room_id}
-#         return jsonify(res)
-#     except:
-#         #FIXME: this should handle wrong input form data
-#         res = {"type": action_types["FORM_DATA_FIELD_INCORRECT"]}
-#         return jsonify(res)
+        for line in parsed_res:
+            quantity = line["quantity"]
+            unit_price = round(float(line["price"]) / float(quantity), 2)
+            name = line["item"]
+            for i in range(int(quantity)):
+                temp_item = Item(name, unit_price)
+                new_bill.items.append(temp_item)
+                db.session.add(temp_item)
 
-#FIXME: we don't have a seperate route for the room QR page yet.  
-@app.route('/room/<int:room_id>/', methods=['GET', 'POST'])
+        db.session.add(new_bill)
+        db.session.flush()
+        db.session.refresh(new_bill)
+        db.session.commit()
+        room_id = new_bill.id 
+        res = {"type" : action_types["REDIRECT"], "payload": room_id}
+        return jsonify(res)
+    except:
+        res = {"type" : "ERROR", "payload": "Image cannot be detected by AWS"} 
+        return jsonify(res)
+
+
+@app.route('/room/<int:room_id>/', methods=['GET'])
+@cross_origin()
 def room_instance(room_id):
-    if request.method == 'POST':
-        #TODO: using websocket, or dynamically update the menu items / database
-        pass
-    else:
+    try:
         food_items = db.session.query(Item) \
             .join(Bill) \
             .filter(Bill.id == room_id) \
             .all()
         res = {"food_items" : [item.to_json() for item in food_items]}
-        return jsonify(res), 200
+        return jsonify(res)
+    except:
+        res = {"type" : "ERROR", "payload": "The room has not been created"} 
+        return jsonify(res)
 
 if __name__ == '__main__':
     app.run()
