@@ -1,5 +1,4 @@
 env
+bin
 __pycache__
 .env
-test_image_string.txt
-test.py

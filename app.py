@@ -61,18 +61,20 @@ def snap():
     new_bill.items = []
     
     for line in parsed_res:
-        temp_item = Item(line["quantity"], line["item"], line["price"]) #FIXME: to unit_price
-        new_bill.items.append(temp_item)
-        db.session.add(temp_item)
+        quantity = line["item"]
+        unit_price = round(line["price"] / float(quantity), 2)
+        name = line["item"]
+        for i in range(int(quantity)):
+            temp_item = Item(name, unit_price)
+            new_bill.items.append(temp_item)
+            db.session.add(temp_item)
 
     db.session.add(new_bill)
     db.session.flush()
     db.session.refresh(new_bill)
     db.session.commit()
     room_id = new_bill.id 
-    # room_id = 1
-    res = {"type": action_types["GOTO_ROOM"], "payload": room_id}
-    return jsonify(res)
+    return redirect(f"http://127.0.0.1:5000/room/{room_id}", code=303)
 
 
 # @app.route('/snap', methods=['POST'])
