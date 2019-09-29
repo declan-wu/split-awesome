@@ -76,7 +76,7 @@ def parser(test_arr):
             pass
     return ret_arr
 
-def detect_labels_local_file(base64_str):
+def detect_texts_local_file(base64_str):
     encoded_str = base64.b64decode(base64_str)
     client=boto3.client('rekognition', region_name='us-east-1')
     response = client.detect_text(Image={'Bytes': encoded_str})
@@ -92,7 +92,7 @@ def detect_labels_local_file(base64_str):
 
 def img_to_json(base64_str):
     """Convert a base64 string and extract useful information using AWS Rekognition"""
-    line_arr = detect_labels_local_file(base64_str)
+    line_arr = detect_texts_local_file(base64_str)
     return parser(line_arr)
 
 if __name__ == '__main__':

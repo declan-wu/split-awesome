@@ -4,7 +4,7 @@ import base64
 API_ENDPOINT = "http://127.0.0.1:5000/snap"
 
 # your source code here 
-with open("./static/images/example.png", "rb") as image_file:
+with open("./static/images/junior.png", "rb") as image_file:
     encoded_string = base64.b64encode(image_file.read())
 
 # data to be sent to api 

@@ -1,5 +1,5 @@
 import os
-from flask import Flask, request, jsonify
+from flask import Flask, request, jsonify, redirect
 from flask_sqlalchemy import SQLAlchemy
 import base64
 
@@ -61,8 +61,8 @@ def snap():
     new_bill.items = []
     
     for line in parsed_res:
-        quantity = line["item"]
-        unit_price = round(line["price"] / float(quantity), 2)
+        quantity = line["quantity"]
+        unit_price = round(float(line["price"]) / float(quantity), 2)
         name = line["item"]
         for i in range(int(quantity)):
             temp_item = Item(name, unit_price)
@@ -74,6 +74,7 @@ def snap():
     db.session.refresh(new_bill)
     db.session.commit()
     room_id = new_bill.id 
+    # room_id = 1
     return redirect(f"http://127.0.0.1:5000/room/{room_id}", code=303)
 
 
@@ -119,7 +120,7 @@ def room_instance(room_id):
             .filter(Bill.id == room_id) \
             .all()
         res = {"food_items" : [item.to_json() for item in food_items]}
-        return jsonify(res)
+        return jsonify(res), 200
 
 if __name__ == '__main__':
     app.run()
