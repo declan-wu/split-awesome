@@ -93,12 +93,28 @@ def room_instance(room_id):
         res = {"type" : "ERROR", "payload": "The room has not been created"} 
         return jsonify(res)
 
+counter = [0]
+@socketio.on('connect')
+def handle_connect():
+    print("---------------------------")
+    print("connect established")
+    counter.append(1)
+    print(len(counter))
+    print("---------------------------")
+
+@socketio.on('disconnect')
+def test_disconnect():
+    print('Client disconnected')
+
 @socketio.on('check')
 def handle_check(request, methods=['GET', 'POST']):
     # request = json.loads(json)
+    print("---------------------------")
     print(request)
-    item_id = request["item_id"]
-    bill_id = request["bill_id"]
+    print("---------------------------")
+
+    # item_id = request["item_id"]
+    # bill_id = request["bill_id"]
     # user_id = request["user_id"]
     # # change target item.user_id to be user id
     # target_user = User.query.filter_by(id=user_id).first()
@@ -106,7 +122,8 @@ def handle_check(request, methods=['GET', 'POST']):
     # target_user.items.append(target_item)
     # db.session.add(target_user)
     # db.session.commit()
-    action = {"type": "check", "item_id": item_id}
+    # action = {"type": "check", "item_id": item_id}
+    action = "check - emit succed!"
     socketio.emit('check', action)
 
 @socketio.on('uncheck')
