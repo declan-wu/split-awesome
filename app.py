@@ -14,7 +14,9 @@ app.config['CORS_HEADERS'] = 'Content-Type'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.config['SECRET_KEY'] = 'this_is_a_secret_key'
 
-socketio = SocketIO(app, cors_allowed_origins='*')
+socketio = SocketIO(app, cors_allowed_origins='https://7cdaf676.ngrok.io')
+# socketio = SocketIO(app)
+
 db = SQLAlchemy(app)
 
 from models import Bill, Item, User
@@ -92,17 +94,18 @@ def room_instance(room_id):
         return jsonify(res)
 
 @socketio.on('check')
-def handle_check(json, methods=['GET', 'POST']):
-    request = json.loads(json)
-    user_id = request["user_id"]
+def handle_check(request, methods=['GET', 'POST']):
+    # request = json.loads(json)
+    print(request)
     item_id = request["item_id"]
     bill_id = request["bill_id"]
-    # change target item.user_id to be user id
-    target_user = User.query.filter_by(id=user_id).first()
-    target_item = Item.query.filter_by(id=item_id).first()
-    target_user.items.append(target_item)
-    db.session.add(target_user)
-    db.session.commit()
+    # user_id = request["user_id"]
+    # # change target item.user_id to be user id
+    # target_user = User.query.filter_by(id=user_id).first()
+    # target_item = Item.query.filter_by(id=item_id).first()
+    # target_user.items.append(target_item)
+    # db.session.add(target_user)
+    # db.session.commit()
     action = {"type": "check", "item_id": item_id}
     socketio.emit('check', action)
 
