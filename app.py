@@ -91,7 +91,7 @@ def room_instance(room_id):
             .join(Bill) \
             .filter(Bill.id == room_id) \
             .all()
-        res = {"food_items" : [item.to_json() for item in food_items]}
+        res = {str(item.id): item.to_json() for item in food_items}
         return jsonify(res)
     except:
         res = {"type" : "ERROR", "payload": "The room has not been created"} 
