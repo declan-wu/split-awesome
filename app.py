@@ -5,6 +5,7 @@ from flask_socketio import SocketIO
 from flask_cors import CORS, cross_origin
 import json
 import base64
+# import eventlet
 
 app = Flask(__name__)
 cors = CORS(app)
@@ -93,7 +94,7 @@ def room_instance(room_id):
         res = {"type" : "ERROR", "payload": "The room has not been created"} 
         return jsonify(res)
 
-counter = [0]
+counter = []
 @socketio.on('connect')
 def handle_connect():
     print("---------------------------")
@@ -104,7 +105,11 @@ def handle_connect():
 
 @socketio.on('disconnect')
 def test_disconnect():
+    counter.pop()
+    print("---------------------------")
+    print(len(counter))
     print('Client disconnected')
+    print("---------------------------")
 
 @socketio.on('check')
 def handle_check(request, methods=['GET', 'POST']):
@@ -112,7 +117,6 @@ def handle_check(request, methods=['GET', 'POST']):
     print("---------------------------")
     print(request)
     print("---------------------------")
-
     # item_id = request["item_id"]
     # bill_id = request["bill_id"]
     # user_id = request["user_id"]
