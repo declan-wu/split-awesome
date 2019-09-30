@@ -14,7 +14,7 @@ app.config['CORS_HEADERS'] = 'Content-Type'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.config['SECRET_KEY'] = 'this_is_a_secret_key'
 
-socketio = SocketIO(app)
+socketio = SocketIO(app, cors_allowed_origins='*')
 db = SQLAlchemy(app)
 
 from models import Bill, Item, User
