@@ -85,6 +85,12 @@ class Item(db.Model):
 def index():
     return "Hello, it's me. Split-awesome"
 
+@app.after_request
+def after_request(response):
+    header = response.headers
+    header[ 'Access-Control-Allow-Origin'] = '*'
+    return response
+
 @app.route('/signup', methods=['POST'])
 @cross_origin()
 def signup():
