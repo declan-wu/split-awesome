@@ -6,8 +6,10 @@ from flask_cors import CORS, cross_origin
 import json
 import base64
 
-import eventlet
-eventlet.monkey_patch()
+# import gevent-websocket
+
+from gevent import monkey
+monkey.patch_all()
 
 app = Flask(__name__)
 cors = CORS(app)
@@ -17,7 +19,7 @@ app.config['CORS_HEADERS'] = 'Content-Type'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.config['SECRET_KEY'] = 'this_is_a_secret_key'
 
-socketio = SocketIO(app, cors_allowed_origins='*', async_mode='eventlet')
+socketio = SocketIO(app, cors_allowed_origins='*', async_mode='gevent')
 
 db = SQLAlchemy(app)
 
@@ -83,6 +85,12 @@ class Item(db.Model):
 def index():
     return "Hello, it's me. Split-awesome"
 
+@app.after_request
+def after_request(response):
+    header = response.headers
+    header[ 'Access-Control-Allow-Origin'] = '*'
+    return response
+
 @app.route('/signup', methods=['POST'])
 @cross_origin()
 def signup():
@@ -101,42 +109,33 @@ def signup():
 @app.route('/snap', methods=['POST'])
 @cross_origin()
 def snap():
-    base64_str = request.form.get('image_data', '')
-    print(base64_str)
-    parsed_res = img_to_json(base64_str)
-    new_bill = Bill()
-    new_bill.items = []
-    print("--------")
-    print(parsed_res)
-    print("--------")
+    try:
+        base64_str = request.form.get('image_data', '')
+        parsed_res = img_to_json(base64_str)
+        new_bill = Bill()
+        new_bill.items = []
+        print("--------")
+        print(parsed_res)
+        print("--------")
+        for line in parsed_res:
+            quantity = line["quantity"]
+            unit_price = round(float(line["price"]) / float(quantity), 2)
+            name = line["item"]
+            for i in range(int(quantity)):
+                temp_item = Item(name, unit_price)
+                new_bill.items.append(temp_item)
+                db.session.add(temp_item)
 
-    # try:
-    #     base64_str = request.form.get('image_data', '')
-    #     parsed_res = img_to_json(base64_str)
-    #     new_bill = Bill()
-    #     new_bill.items = []
-    #     print("--------")
-    #     print(parsed_res)
-    #     print("--------")
-    #     for line in parsed_res:
-    #         quantity = line["quantity"]
-    #         unit_price = round(float(line["price"]) / float(quantity), 2)
-    #         name = line["item"]
-    #         for i in range(int(quantity)):
-    #             temp_item = Item(name, unit_price)
-    #             new_bill.items.append(temp_item)
-    #             db.session.add(temp_item)
-
-    #     db.session.add(new_bill)
-    #     db.session.flush()
-    #     db.session.refresh(new_bill)
-    #     db.session.commit()
-    #     room_id = new_bill.id 
-    #     res = {"type" : action_types["REDIRECT"], "payload": room_id}
-    #     return jsonify(res)
-    # except:
-    #     res = {"type" : "ERROR", "payload": "Image cannot be detected by AWS"} 
-    #     return jsonify(res)
+        db.session.add(new_bill)
+        db.session.flush()
+        db.session.refresh(new_bill)
+        db.session.commit()
+        room_id = new_bill.id 
+        res = {"type" : action_types["REDIRECT"], "payload": room_id}
+        return jsonify(res)
+    except:
+        res = {"type" : "ERROR", "payload": "Image cannot be detected by AWS"} 
+        return jsonify(res)
 
 @app.route('/room/<int:room_id>/', methods=['GET'])
 @cross_origin()
@@ -175,7 +174,7 @@ def handle_check(request, methods=['GET', 'POST']):
     db.session.add(target_user)
     db.session.commit()
     action = {"type": "check", "item_id": item_id}
-    socketio.emit('check', action)
+    socketio.emit('check', action, include_self=False)
 
 @socketio.on('uncheck')
 def handle_uncheck(request, methods=['GET', 'POST']):
@@ -187,7 +186,7 @@ def handle_uncheck(request, methods=['GET', 'POST']):
     db.session.add(target_item)
     db.session.commit()
     action = {"type": "uncheck", "item_id": item_id}
-    socketio.emit('uncheck', action)
+    socketio.emit('uncheck', action, include_self=False)
 
 if __name__ == '__main__':
     socketio.run(app)

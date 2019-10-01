@@ -4,13 +4,14 @@ botocore==1.12.237
 Click==7.0
 dnspython==1.16.0
 docutils==0.15.2
-eventlet==0.25.1
 Flask==1.1.1
 Flask-Cors==3.0.8
 Flask-Migrate==2.5.2
 Flask-Script==2.0.6
 Flask-SocketIO==4.2.1
 Flask-SQLAlchemy==2.4.1
+gevent==1.4.0
+gevent-websocket==0.10.1
 greenlet==0.4.15
 gunicorn==19.9.0
 itsdangerous==1.1.0
