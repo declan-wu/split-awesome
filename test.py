@@ -1,7 +1,7 @@
 import requests 
 import base64
 # defining the api-endpoint  
-API_ENDPOINT = "https://split-awesome-api.herokuapp.com/snap"
+API_ENDPOINT = "http://e845a324.ngrok.io/snap"
 
 # your source code here 
 with open("./static/images/junior.png", "rb") as image_file:
@@ -11,9 +11,9 @@ with open("./static/images/junior.png", "rb") as image_file:
 data = {'image_data': encoded_string} 
 
 # sending post request and saving response as response object 
-requests.post(url = API_ENDPOINT, data = data) 
+r = requests.post(url = API_ENDPOINT, data = data) 
 
 # extracting response text  
-# print("--------------------------------")
-# print(r.text ) 
-# print("--------------------------------")
+print("--------------------------------")
+print(r.text ) 
+print("--------------------------------")
