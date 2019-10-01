@@ -19,13 +19,11 @@ class User(db.Model):
     __tablename__ = 'users'
 
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
-    name = db.Column(db.String(128), nullable=False)
-    hased_password = db.Column(db.String(128), nullable=False)
+    email = db.Column(db.String(128), nullable=False)
     items = db.relationship('Item', backref='user', lazy=True)
     
-    def __init__(self, name, hashed_password):
-        self.name = name
-        self.hashed_password = hashed_password
+    def __init__(self, email):
+        self.email = email
 
 
 class Item(db.Model):
@@ -46,5 +44,6 @@ class Item(db.Model):
         return {
             'id': self.id, 
             'name': self.name,
-            'unit_price': self.unit_price
+            'unit_price': self.unit_price,
+            'is_checked': self.user_id != None 
         }
