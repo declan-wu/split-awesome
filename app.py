@@ -103,42 +103,33 @@ def signup():
 @app.route('/snap', methods=['POST'])
 @cross_origin()
 def snap():
-    base64_str = request.form.get('image_data', '')
-    parsed_res = img_to_json(base64_str)
-    print("--------")
-    print(parsed_res)
-    print("--------")
-    # new_bill = Bill()
-    # new_bill.items = []
+    try:
+        base64_str = request.form.get('image_data', '')
+        parsed_res = img_to_json(base64_str)
+        new_bill = Bill()
+        new_bill.items = []
+        print("--------")
+        print(parsed_res)
+        print("--------")
+        for line in parsed_res:
+            quantity = line["quantity"]
+            unit_price = round(float(line["price"]) / float(quantity), 2)
+            name = line["item"]
+            for i in range(int(quantity)):
+                temp_item = Item(name, unit_price)
+                new_bill.items.append(temp_item)
+                db.session.add(temp_item)
 
-
-    # try:
-    #     base64_str = request.form.get('image_data', '')
-    #     parsed_res = img_to_json(base64_str)
-    #     new_bill = Bill()
-    #     new_bill.items = []
-    #     print("--------")
-    #     print(parsed_res)
-    #     print("--------")
-    #     for line in parsed_res:
-    #         quantity = line["quantity"]
-    #         unit_price = round(float(line["price"]) / float(quantity), 2)
-    #         name = line["item"]
-    #         for i in range(int(quantity)):
-    #             temp_item = Item(name, unit_price)
-    #             new_bill.items.append(temp_item)
-    #             db.session.add(temp_item)
-
-    #     db.session.add(new_bill)
-    #     db.session.flush()
-    #     db.session.refresh(new_bill)
-    #     db.session.commit()
-    #     room_id = new_bill.id 
-    #     res = {"type" : action_types["REDIRECT"], "payload": room_id}
-    #     return jsonify(res)
-    # except:
-    #     res = {"type" : "ERROR", "payload": "Image cannot be detected by AWS"} 
-    #     return jsonify(res)
+        db.session.add(new_bill)
+        db.session.flush()
+        db.session.refresh(new_bill)
+        db.session.commit()
+        room_id = new_bill.id 
+        res = {"type" : action_types["REDIRECT"], "payload": room_id}
+        return jsonify(res)
+    except:
+        res = {"type" : "ERROR", "payload": "Image cannot be detected by AWS"} 
+        return jsonify(res)
 
 @app.route('/room/<int:room_id>/', methods=['GET'])
 @cross_origin()

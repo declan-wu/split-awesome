@@ -5,11 +5,11 @@ from app import db, Bill, Item, User
 # db.session.commit()
 
 
-new_bill = Bill()
-fries = Item("fries", 1.5)
-junior = Item('junior chicken', 2.2)
-new_bill.items = [fries, junior]
+# new_bill = Bill()
+# fries = Item("fries", 1.5)
+# junior = Item('junior chicken', 2.2)
+# new_bill.items = [fries, junior]
 
 
-db.session.add(new_bill)
-db.session.commit()
+# db.session.add(new_bill)
+# db.session.commit()
