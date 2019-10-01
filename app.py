@@ -6,8 +6,10 @@ from flask_cors import CORS, cross_origin
 import json
 import base64
 
-import eventlet
-eventlet.monkey_patch()
+# import gevent-websocket
+
+from gevent import monkey
+monkey.patch_all()
 
 app = Flask(__name__)
 cors = CORS(app)
@@ -17,7 +19,7 @@ app.config['CORS_HEADERS'] = 'Content-Type'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.config['SECRET_KEY'] = 'this_is_a_secret_key'
 
-socketio = SocketIO(app, cors_allowed_origins='*', async_mode='eventlet')
+socketio = SocketIO(app, cors_allowed_origins='*', async_mode='gevent')
 
 db = SQLAlchemy(app)
 
@@ -102,13 +104,13 @@ def signup():
 @cross_origin()
 def snap():
     base64_str = request.form.get('image_data', '')
-    print(base64_str)
     parsed_res = img_to_json(base64_str)
-    new_bill = Bill()
-    new_bill.items = []
     print("--------")
     print(parsed_res)
     print("--------")
+    # new_bill = Bill()
+    # new_bill.items = []
+
 
     # try:
     #     base64_str = request.form.get('image_data', '')
@@ -175,7 +177,7 @@ def handle_check(request, methods=['GET', 'POST']):
     db.session.add(target_user)
     db.session.commit()
     action = {"type": "check", "item_id": item_id}
-    socketio.emit('check', action)
+    socketio.emit('check', action, include_self=False)
 
 @socketio.on('uncheck')
 def handle_uncheck(request, methods=['GET', 'POST']):
@@ -187,7 +189,7 @@ def handle_uncheck(request, methods=['GET', 'POST']):
     db.session.add(target_item)
     db.session.commit()
     action = {"type": "uncheck", "item_id": item_id}
-    socketio.emit('uncheck', action)
+    socketio.emit('uncheck', action, include_self=False)
 
 if __name__ == '__main__':
     socketio.run(app)

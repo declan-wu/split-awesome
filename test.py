@@ -1,7 +1,7 @@
 import requests 
 import base64
 # defining the api-endpoint  
-API_ENDPOINT = "http://e845a324.ngrok.io/snap"
+API_ENDPOINT = "https://80bc4341.ngrok.io/snap"
 
 # your source code here 
 with open("./static/images/junior.png", "rb") as image_file:
