@@ -37,10 +37,14 @@ class Bill(db.Model):
 
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
     created_date = db.Column(db.DateTime, default=func.now(), nullable=False)
+    # JACKSON CREATED BELOW LINE
+    uid = db.Column(db.String(128), nullable=False)
     items = db.relationship('Item', backref='bill', lazy=True)
 
-    def __init__(self):
-        pass
+    def __init__(self, uid):
+        # JACKSON CREATED BELOW LINE
+        self.uid = uid
+        # pass
 
 
 class User(db.Model):
@@ -49,10 +53,13 @@ class User(db.Model):
 
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
     email = db.Column(db.String(128), nullable=False)
+    uid = db.Column(db.String(128), nullable=False)
     items = db.relationship('Item', backref='user', lazy=True)
     
-    def __init__(self, email):
+    def __init__(self, email, uid):
         self.email = email
+        # JACKSON CREATED BELOW LINE
+        self.uid = uid
 
 
 class Item(db.Model):
@@ -96,7 +103,8 @@ def after_request(response):
 def signup():
     try:
         email = request.get_json()['user_email']
-        new_user = User(email)
+        u_id = request.get_json()['u_id']
+        new_user = User(email, u_id)
         db.session.add(new_user)
         db.session.commit()
         res = {"type" : action_types["REDIRECT"], "payload": "/snap"}
@@ -110,9 +118,10 @@ def signup():
 @cross_origin()
 def snap():
     try:
+        u_id = request.form.get('u_id', '')
         base64_str = request.form.get('image_data', '')
         parsed_res = img_to_json(base64_str)
-        new_bill = Bill()
+        new_bill = Bill(u_id)
         new_bill.items = []
         print("--------")
         print(parsed_res)
@@ -145,19 +154,31 @@ def room_instance(room_id):
             .join(Bill) \
             .filter(Bill.id == room_id) \
             .all()
-        res = {str(item.id): item.to_json() for item in food_items}
+        
+        host_id = db.session.query(Bill) \
+            .filter(Bill.id == room_id) \
+            .all()
+
+        res2 = host_id[0].uid
+        res = {}
+        res["items"] = {str(item.id): item.to_json() for item in food_items}
+        res["host_id"] = res2
         return jsonify(res)
     except:
         res = {"type" : "ERROR", "payload": "The room has not been created"} 
         return jsonify(res)
 
-@app.route('/users/<int:user_id>', methods=['GET'])
+# JACKSON CREATED BELOW ROUTE
+@app.route('/users/<u_id>/room/<int:room_id>/', methods=['GET'])
 @cross_origin()
-def cart_instance(user_id):
+def cart_instance(u_id, room_id):
+
     try:
         cart_items = db.session.query(Item) \
-            .filter(Item.user_id == user_id) \
+            .join(User) \
+            .filter(Bill.id == room_id, User.uid == u_id) \
             .all()
+
         res = {str(item.id): item.to_json() for item in cart_items}
         return jsonify(res)
     except:
