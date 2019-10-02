@@ -39,6 +39,8 @@ dnspython = "==1.16.0"
 eventlet = "==0.25.1"
 greenlet = "==0.4.15"
 monotonic = "==1.5"
+gevent = "==1.4.0"
+gevent-websocket = "==0.10.1"
 
 [requires]
 python_version = "3.6"

@@ -151,6 +151,19 @@ def room_instance(room_id):
         res = {"type" : "ERROR", "payload": "The room has not been created"} 
         return jsonify(res)
 
+@app.route('/users/<int:user_id>', methods=['GET'])
+@cross_origin()
+def cart_instance(user_id):
+    try:
+        cart_items = db.session.query(Item) \
+            .filter(Item.user_id == user_id) \
+            .all()
+        res = {str(item.id): item.to_json() for item in cart_items}
+        return jsonify(res)
+    except:
+        res = {"type" : "ERROR", "payload": "Cart has not been created"}
+        return jsonify(res)
+
 @socketio.on('connect')
 def handle_connect():
     print("---------------------------")
