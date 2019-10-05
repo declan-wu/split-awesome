@@ -29,7 +29,8 @@ from action_types import action_types
 
 from sqlalchemy.sql import func
 
-#FIXME: -----FIXME:---------FIXME:-------FIXME:--------FIXME:----------FIXME:----------- FIXME:
+# ------------------------------------------------------------------------------------ 
+# ------------------------------------------------------------------------------------ 
 
 class Bill(db.Model):
 
@@ -77,7 +78,8 @@ class Item(db.Model):
             'is_checked': self.user_id != None 
         }
 
-#FIXME: -----FIXME:---------FIXME:-------FIXME:--------FIXME:----------FIXME:----------- FIXME:
+# ------------------------------------------------------------------------------------ 
+# ------------------------------------------------------------------------------------ 
 
 
 @app.route('/', methods=['GET'])
@@ -114,9 +116,6 @@ def snap():
         parsed_res = img_to_json(base64_str)
         new_bill = Bill()
         new_bill.items = []
-        print("--------")
-        print(parsed_res)
-        print("--------")
         for line in parsed_res:
             quantity = line["quantity"]
             unit_price = round(float(line["price"]) / float(quantity), 2)
