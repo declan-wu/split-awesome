@@ -1,7 +1,7 @@
 import os
 from flask import Flask, request, jsonify, redirect
 from flask_sqlalchemy import SQLAlchemy
-from flask_socketio import SocketIO
+from flask_socketio import SocketIO, join_room, leave_room
 from flask_cors import CORS, cross_origin
 import json
 import base64
@@ -193,37 +193,51 @@ def cart_instance(u_id, room_id):
         res = {"type" : "ERROR", "payload": "Cart has not been created"}
         return jsonify(res)
 
-# # JACKSON CREATED BELOW ROUTE
+# JACKSON CREATED BELOW ROUTE
 @app.route('/kevin/', methods=['GET'])
 @cross_origin()
 def summary():
 
     try:
         print ("PRINT THIS SHIT")
-        summary_items = db.session.query(Item.user_id, func.sum(Item.unit_price).label('total')) \
-            .join(User) \
-            .group_by(Item.user_id) \
-            .all() 
-        
-        userDetails = []
-        print ("PRINT THIS SHIT", summary_items[0][0])
-        print ("PRINT THIS SHIT", summary_items[1][1])
-        for user in summary_items:
-            userTemp = {}
-            userTemp['total'] = user.total
-            userTemp['user_id'] = user.user_id
-            # userTemp['user_bill'] = user.bill_id
-            # userTemp['user_uid'] = user.uid
-            # userTemp['first_name'] = user.first_name
-            # userTemp['last_name'] = user.last_name
-            # userTemp['email'] = user.email
-            userDetails.append(userTemp)
 
-        print(userDetails)
-        # print(summary_items)
-        res = {'users': userDetails}
-        # res = {str(user): user.id.to_json() for user in summary_items}
-        return jsonify(res)
+        itemQuerySum = db.session.query(Item.user_id, func.sum(Item.unit_price).label('total')) \
+             .join(User) \
+             .group_by(Item.user_id) \
+             .subquery()
+
+        summary_items = User.query.join(
+            itemQuerySum, User.id == itemQuerySum.c.user_id)
+        print(str(summary_items))
+        return 'hi'
+        # itemQuerySum = db.session.query(Item.user_id, func.sum(Item.unit_price).label('total')) \
+        #     .join(User, User.id = Item.user_id) \
+        #     .group_by(Item.user_id) \
+        #     .subquery()
+
+        # summary_items = db.session.query(User) \
+        #     .join(itemQuerySum, User.id = itemQuerySum.user_id) as itemQuerySum \
+        #     .all() 
+        
+        # userDetails = []
+        # print ("PRINT THIS SHIT", summary_items[0][0])
+        # print ("PRINT THIS SHIT", summary_items[1][1])
+        # for user in summary_items:
+        #     userTemp = {}
+        #     userTemp['total'] = user.total
+        #     userTemp['user_id'] = user.user_id
+        #     # userTemp['user_bill'] = user.bill_id
+        #     # userTemp['user_uid'] = user.uid
+        #     # userTemp['first_name'] = user.first_name
+        #     # userTemp['last_name'] = user.last_name
+        #     # userTemp['email'] = user.email
+        #     userDetails.append(userTemp)
+
+        # print(userDetails)
+        # # print(summary_items)
+        # res = {'users': userDetails}
+        # # res = {str(user): user.id.to_json() for user in summary_items}
+        # return jsonify(res)
     except:
         res = {"type" : "ERROR", "payload": "Cart has not been created"}
         return jsonify(res)
@@ -241,6 +255,16 @@ def test_disconnect():
     print('Client disconnected')
     print("---------------------------")
 
+@socketio.on('join')
+def on_join(room):
+    print('THIS IS THE JOIN ROOM', room)
+    join_room(room)
+
+@socketio.on('leave')
+def on_leave(room):
+    print('THIS IS THE LEAVE ROOM', room)
+    leave_room(room)
+
 @socketio.on('check')
 def handle_check(request, methods=['GET', 'POST']):
     item_id = request["item_id"]
@@ -252,7 +276,8 @@ def handle_check(request, methods=['GET', 'POST']):
     db.session.add(target_user)
     db.session.commit()
     action = {"type": "check", "item_id": item_id}
-    socketio.emit('check', action, include_self=False)
+    socketio.emit('check', action, include_self=False, room=request["room_id"])
+    print('THIS IS CHECK ROOM ID', request["room_id"])
 
 @socketio.on('uncheck')
 def handle_uncheck(request, methods=['GET', 'POST']):
@@ -264,7 +289,8 @@ def handle_uncheck(request, methods=['GET', 'POST']):
     db.session.add(target_item)
     db.session.commit()
     action = {"type": "uncheck", "item_id": item_id}
-    socketio.emit('uncheck', action, include_self=False)
+    socketio.emit('uncheck', action, include_self=False, room=request["room_id"])
+    print('THIS IS UNCHECK ROOM ID', request["room_id"])
 
 if __name__ == '__main__':
     socketio.run(app)
