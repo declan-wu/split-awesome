@@ -1,6 +1,6 @@
 from app import db, Bill, Item, User
 
-new_user = User("test@test.com", "L3QuMCBojXSGeHG9UrQAwet9MnV2")
+new_user = User("test@test.com", "L3QuMCBojXSGeHG9UrQAwet9MnV2", "Kevin", "Suen")
 db.session.add(new_user)
 db.session.commit()
 

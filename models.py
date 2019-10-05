@@ -24,14 +24,18 @@ class User(db.Model):
 
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
     email = db.Column(db.String(128), nullable=False)
-    # JACKSON CREATED BELOW LINE
+    # JACKSON CREATED BELOW THREE LINE
     uid = db.Column(db.String(128), nullable=False)
+    first_name = db.Column(db.String(128), nullable=False)
+    last_name = db.Column(db.String(128), nullable=False)
     items = db.relationship('Item', backref='user', lazy=True)
     
-    def __init__(self, email, uid):
+    def __init__(self, email, uid, first_name, last_name):
         self.email = email
-        # JACKSON CREATED BELOW LINE
+        # JACKSON CREATED BELOW THREE LINE
         self.uid = uid
+        self.first_name = first_name
+        self.last_name = last_name
 
 
 class Item(db.Model):

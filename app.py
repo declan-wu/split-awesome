@@ -53,13 +53,17 @@ class User(db.Model):
 
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
     email = db.Column(db.String(128), nullable=False)
+    first_name = db.Column(db.String(128), nullable=False)
+    last_name = db.Column(db.String(128), nullable=False)
     uid = db.Column(db.String(128), nullable=False)
     items = db.relationship('Item', backref='user', lazy=True)
     
-    def __init__(self, email, uid):
+    def __init__(self, email, uid, first_name, last_name):
         self.email = email
         # JACKSON CREATED BELOW LINE
         self.uid = uid
+        self.first_name = first_name
+        self.last_name = last_name
 
 
 class Item(db.Model):
@@ -103,8 +107,11 @@ def after_request(response):
 def signup():
     try:
         email = request.get_json()['user_email']
+        # JACKSON CREATED THREE LINES BELOW AND EDITED 5TH LINE
+        first_name = request.get_json()['first_name']
+        last_name = request.get_json()['last_name']
         u_id = request.get_json()['u_id']
-        new_user = User(email, u_id)
+        new_user = User(email, u_id, first_name, last_name)
         db.session.add(new_user)
         db.session.commit()
         res = {"type" : action_types["REDIRECT"], "payload": "/snap"}
@@ -176,7 +183,8 @@ def cart_instance(u_id, room_id):
     try:
         cart_items = db.session.query(Item) \
             .join(User) \
-            .filter(Bill.id == room_id, User.uid == u_id) \
+            .filter(User.uid == u_id) \
+            .filter(Item.bill_id == room_id) \
             .all()
 
         res = {str(item.id): item.to_json() for item in cart_items}
@@ -184,6 +192,42 @@ def cart_instance(u_id, room_id):
     except:
         res = {"type" : "ERROR", "payload": "Cart has not been created"}
         return jsonify(res)
+
+# # JACKSON CREATED BELOW ROUTE
+@app.route('/kevin/', methods=['GET'])
+@cross_origin()
+def summary():
+
+    try:
+        print ("PRINT THIS SHIT")
+        summary_items = db.session.query(Item.user_id, func.sum(Item.unit_price).label('total')) \
+            .join(User) \
+            .group_by(Item.user_id) \
+            .all() 
+        
+        userDetails = []
+        print ("PRINT THIS SHIT", summary_items[0][0])
+        print ("PRINT THIS SHIT", summary_items[1][1])
+        for user in summary_items:
+            userTemp = {}
+            userTemp['total'] = user.total
+            userTemp['user_id'] = user.user_id
+            # userTemp['user_bill'] = user.bill_id
+            # userTemp['user_uid'] = user.uid
+            # userTemp['first_name'] = user.first_name
+            # userTemp['last_name'] = user.last_name
+            # userTemp['email'] = user.email
+            userDetails.append(userTemp)
+
+        print(userDetails)
+        # print(summary_items)
+        res = {'users': userDetails}
+        # res = {str(user): user.id.to_json() for user in summary_items}
+        return jsonify(res)
+    except:
+        res = {"type" : "ERROR", "payload": "Cart has not been created"}
+        return jsonify(res)
+
 
 @socketio.on('connect')
 def handle_connect():
