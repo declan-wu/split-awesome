@@ -1,7 +1,8 @@
 import os
 from flask import Flask, request, jsonify, redirect
 from flask_sqlalchemy import SQLAlchemy
-from flask_socketio import SocketIO
+from sqlalchemy.sql import func
+from flask_socketio import SocketIO, join_room, leave_room
 from flask_cors import CORS, cross_origin
 import json
 import base64
@@ -29,7 +30,8 @@ from action_types import action_types
 
 from sqlalchemy.sql import func
 
-#FIXME: -----FIXME:---------FIXME:-------FIXME:--------FIXME:----------FIXME:----------- FIXME:
+# ------------------------------------------------------------------------------------ 
+# ------------------------------------------------------------------------------------ 
 
 class Bill(db.Model):
 
@@ -37,10 +39,14 @@ class Bill(db.Model):
 
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
     created_date = db.Column(db.DateTime, default=func.now(), nullable=False)
+    # JACKSON CREATED BELOW LINE
+    uid = db.Column(db.String(128), nullable=False)
     items = db.relationship('Item', backref='bill', lazy=True)
 
-    def __init__(self):
-        pass
+    def __init__(self, uid):
+        # JACKSON CREATED BELOW LINE
+        self.uid = uid
+        # pass
 
 
 class User(db.Model):
@@ -49,10 +55,19 @@ class User(db.Model):
 
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
     email = db.Column(db.String(128), nullable=False)
+    # JACKSON CREATED BELOW THREE LINE
+    uid = db.Column(db.String(128), nullable=False)
+    first_name = db.Column(db.String(128), nullable=False)
+    last_name = db.Column(db.String(128), nullable=False)
     items = db.relationship('Item', backref='user', lazy=True)
+    full_name = db.column_property(first_name + " " + last_name)
     
-    def __init__(self, email):
+    def __init__(self, email, uid, first_name, last_name):
         self.email = email
+        # JACKSON CREATED BELOW THREE LINE
+        self.uid = uid
+        self.first_name = first_name
+        self.last_name = last_name
 
 
 class Item(db.Model):
@@ -77,7 +92,8 @@ class Item(db.Model):
             'is_checked': self.user_id != None 
         }
 
-#FIXME: -----FIXME:---------FIXME:-------FIXME:--------FIXME:----------FIXME:----------- FIXME:
+# ------------------------------------------------------------------------------------ 
+# ------------------------------------------------------------------------------------ 
 
 
 @app.route('/', methods=['GET'])
@@ -96,7 +112,11 @@ def after_request(response):
 def signup():
     try:
         email = request.get_json()['user_email']
-        new_user = User(email)
+        # JACKSON CREATED THREE LINES BELOW AND EDITED 5TH LINE
+        first_name = request.get_json()['first_name']
+        last_name = request.get_json()['last_name']
+        u_id = request.get_json()['u_id']
+        new_user = User(email, u_id, first_name, last_name)
         db.session.add(new_user)
         db.session.commit()
         res = {"type" : action_types["REDIRECT"], "payload": "/snap"}
@@ -105,18 +125,15 @@ def signup():
         res = {"type" : "ERROR", "payload": "Fail to sign up"} 
         return jsonify(res)
 
-#FIXME: this route doesn't work
 @app.route('/snap', methods=['POST'])
 @cross_origin()
 def snap():
     try:
+        u_id = request.form.get('u_id', '')
         base64_str = request.form.get('image_data', '')
         parsed_res = img_to_json(base64_str)
-        new_bill = Bill()
+        new_bill = Bill(u_id)
         new_bill.items = []
-        print("--------")
-        print(parsed_res)
-        print("--------")
         for line in parsed_res:
             quantity = line["quantity"]
             unit_price = round(float(line["price"]) / float(quantity), 2)
@@ -137,6 +154,15 @@ def snap():
         res = {"type" : "ERROR", "payload": "Image cannot be detected by AWS"} 
         return jsonify(res)
 
+def find_name(user_id):
+    try:
+        name = db.session.query(User
+        ).filter(User.id == user_id
+        ).first()
+        return name.full_name
+    except:
+        print("User doesn't exist!")
+
 @app.route('/room/<int:room_id>/', methods=['GET'])
 @cross_origin()
 def room_instance(room_id):
@@ -145,11 +171,105 @@ def room_instance(room_id):
             .join(Bill) \
             .filter(Bill.id == room_id) \
             .all()
-        res = {str(item.id): item.to_json() for item in food_items}
+        
+        host_id = db.session.query(Bill) \
+            .filter(Bill.id == room_id) \
+            .all()
+
+        res2 = host_id[0].uid
+        res = {}
+        res["items"] = {str(item.id): item.to_json() for item in food_items}
+        res["host_id"] = res2
         return jsonify(res)
     except:
         res = {"type" : "ERROR", "payload": "The room has not been created"} 
         return jsonify(res)
+
+@app.route('/room/<int:room_id>/summary', methods=['GET'])
+@cross_origin()
+def room_summary(room_id):
+    try:
+        summary = db.session.query(
+            Item.user_id,
+            func.sum(Item.unit_price).label('sum')
+        ).filter(Item.bill_id == room_id
+        ).join( User
+        ).group_by(Item.user_id
+        ).all()
+        return jsonify ([{'name': find_name(row[0]), 'amount': float(row[1])} for row in summary])
+    except:
+        return jsonify({"error": "database error on room_sumamry"})
+
+def find_user_bill_detail(user_id, bill_id):
+    try:
+        cart_items = db.session.query(Item
+            ).filter(Item.bill_id == bill_id, Item.user_id == user_id
+            ).all()
+        ret = []
+        subtotal = 0
+        for item in cart_items:
+            ret.append({'name': item.name, 'price': item.unit_price})
+            subtotal += item.unit_price
+        return (subtotal, ret)
+    except:
+        return jsonify({"error": "database error on find_user_bills"})
+
+def find_bill_info(user_id, bill_id):
+    try:
+        bill = db.session.query(
+            Bill.id,
+            Bill.created_date
+        ).filter(Bill.id == bill_id
+        ).first()
+
+        user_bills = find_user_bill_detail(user_id, bill_id)
+        return {'id': bill_id, 'date': bill[1], 'items': user_bills[1], 'subtotal': user_bills[0]}
+    except:
+        return jsonify({"error": "database error on find_bill_info"})
+
+@app.route('/user/<int:user_id>/bills', methods=['GET'])
+@cross_origin()
+def user_bills(user_id):
+    try: 
+        bills = db.session.query(
+            Item.bill_id,
+            func.count(Item.bill_id).label('count')
+        ).filter(Item.user_id == user_id
+        ).group_by(Item.bill_id
+        ).all()
+        bills_particiapted = [find_bill_info(user_id, bill[0]) for bill in reversed(bills)]
+        return jsonify(bills_particiapted)
+    except:
+        return jsonify({"error": "database error on user_bills"})
+
+@app.route('/rooms', methods=['GET'])
+@cross_origin()
+def get_all_rooms(): 
+    try:
+        bills = db.session.query(
+            Bill.id
+        ).all()
+        return jsonify([bill[0] for bill in bills])
+    except:
+        return jsonify({"error": "database error on get_rooms"})
+
+@app.route('/users/<u_id>/room/<int:room_id>/', methods=['GET'])
+@cross_origin()
+def cart_instance(u_id, room_id):
+
+    try:
+        cart_items = db.session.query(Item) \
+            .join(User) \
+            .filter(User.uid == u_id) \
+            .filter(Item.bill_id == room_id) \
+            .all()
+
+        res = {str(item.id): item.to_json() for item in cart_items}
+        return jsonify(res)
+    except:
+        res = {"type" : "ERROR", "payload": "Cart has not been created"}
+        return jsonify(res)
+
 
 @socketio.on('connect')
 def handle_connect():
@@ -163,6 +283,16 @@ def test_disconnect():
     print('Client disconnected')
     print("---------------------------")
 
+@socketio.on('join')
+def on_join(room):
+    print('THIS IS THE JOIN ROOM', room)
+    join_room(room)
+
+@socketio.on('leave')
+def on_leave(room):
+    print('THIS IS THE LEAVE ROOM', room)
+    leave_room(room)
+
 @socketio.on('check')
 def handle_check(request, methods=['GET', 'POST']):
     item_id = request["item_id"]
@@ -174,7 +304,8 @@ def handle_check(request, methods=['GET', 'POST']):
     db.session.add(target_user)
     db.session.commit()
     action = {"type": "check", "item_id": item_id}
-    socketio.emit('check', action, include_self=False)
+    socketio.emit('check', action, include_self=False, room=request["room_id"])
+    print('THIS IS CHECK ROOM ID', request["room_id"])
 
 @socketio.on('uncheck')
 def handle_uncheck(request, methods=['GET', 'POST']):
@@ -186,7 +317,8 @@ def handle_uncheck(request, methods=['GET', 'POST']):
     db.session.add(target_item)
     db.session.commit()
     action = {"type": "uncheck", "item_id": item_id}
-    socketio.emit('uncheck', action, include_self=False)
+    socketio.emit('uncheck', action, include_self=False, room=request["room_id"])
+    print('THIS IS UNCHECK ROOM ID', request["room_id"])
 
 if __name__ == '__main__':
     socketio.run(app)
