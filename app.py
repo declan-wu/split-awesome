@@ -1,6 +1,7 @@
 import os
 from flask import Flask, request, jsonify, redirect
 from flask_sqlalchemy import SQLAlchemy
+from sqlalchemy.sql import func
 from flask_socketio import SocketIO, join_room, leave_room
 from flask_cors import CORS, cross_origin
 import json
@@ -54,14 +55,16 @@ class User(db.Model):
 
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
     email = db.Column(db.String(128), nullable=False)
+    # JACKSON CREATED BELOW THREE LINE
+    uid = db.Column(db.String(128), nullable=False)
     first_name = db.Column(db.String(128), nullable=False)
     last_name = db.Column(db.String(128), nullable=False)
-    uid = db.Column(db.String(128), nullable=False)
     items = db.relationship('Item', backref='user', lazy=True)
+    full_name = db.column_property(first_name + " " + last_name)
     
     def __init__(self, email, uid, first_name, last_name):
         self.email = email
-        # JACKSON CREATED BELOW LINE
+        # JACKSON CREATED BELOW THREE LINE
         self.uid = uid
         self.first_name = first_name
         self.last_name = last_name
@@ -122,7 +125,6 @@ def signup():
         res = {"type" : "ERROR", "payload": "Fail to sign up"} 
         return jsonify(res)
 
-#FIXME: this route doesn't work
 @app.route('/snap', methods=['POST'])
 @cross_origin()
 def snap():
@@ -152,6 +154,15 @@ def snap():
         res = {"type" : "ERROR", "payload": "Image cannot be detected by AWS"} 
         return jsonify(res)
 
+def find_name(user_id):
+    try:
+        name = db.session.query(User
+        ).filter(User.id == user_id
+        ).first()
+        return name.full_name
+    except:
+        print("User doesn't exist!")
+
 @app.route('/room/<int:room_id>/', methods=['GET'])
 @cross_origin()
 def room_instance(room_id):
@@ -173,6 +184,21 @@ def room_instance(room_id):
     except:
         res = {"type" : "ERROR", "payload": "The room has not been created"} 
         return jsonify(res)
+
+@app.route('/room/<int:room_id>/summary', methods=['GET'])
+@cross_origin()
+def room_summary(room_id):
+
+    summary = db.session.query(
+        Item.user_id,
+        func.sum(Item.unit_price).label('sum')
+    ).filter(Item.bill_id == room_id
+    ).join( User
+    ).group_by(Item.user_id
+    ).all()
+
+    return jsonify ([{'name': find_name(row[0]), 'amount': float(row[1])} for row in summary])
+
 
 # JACKSON CREATED BELOW ROUTE
 @app.route('/users/<u_id>/room/<int:room_id>/', methods=['GET'])
@@ -212,7 +238,7 @@ def summary():
         # itemQuerySum = db.session.query(Item.user_id, func.sum(Item.unit_price).label('total')) \
         #     .join(User, User.id = Item.user_id) \
         #     .group_by(Item.user_id) \
-        #     .subquery()
+        #     .subquery() 
 
         # summary_items = db.session.query(User) \
         #     .join(itemQuerySum, User.id = itemQuerySum.user_id) as itemQuerySum \

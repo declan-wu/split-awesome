@@ -29,6 +29,7 @@ class User(db.Model):
     first_name = db.Column(db.String(128), nullable=False)
     last_name = db.Column(db.String(128), nullable=False)
     items = db.relationship('Item', backref='user', lazy=True)
+    full_name = db.column_property(first_name + " " + last_name)
     
     def __init__(self, email, uid, first_name, last_name):
         self.email = email
