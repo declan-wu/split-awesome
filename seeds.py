@@ -1,20 +1,13 @@
 from app import db, Bill, Item, User
 
-jackson = User("test@test.com", "L3QuMCBojXSGeHG9UrQAwet9MnV2", "Kevin", "Suen")
-kevin = User("test1@test.com", "L3QuMCBojXSGeHG9UrQAwet9MnV3", "Jackson", "Fung")
-new_bill = Bill("L3QuMCBojXSGeHG9UrQAwet9MnV2")
+# jackson = User("test@test.com", "L3QuMCBojXSGeHG9UrQAwet9MnV2", "Kevin", "Suen")
+# kevin = User("test1@test.com", "L3QuMCBojXSGeHG9UrQAwet9MnV3", "Jackson", "Fung")
+kevin = db.session.query(User).filter(User.id == 1).first()
 
-fries = Item("large fries", 6.5)
-junior = Item('junior chicken', 2.2)
-pop = Item('sprite', 2)
+fries = db.session.query(Item).filter(Item.id == 1).first()
 
-new_bill.items = [fries, junior, pop]
-jackson.items = [fries, junior]
-kevin.items = [pop]
 
-db.session.add(jackson)
+kevin.items.append(fries)
+
 db.session.add(kevin)
-db.session.add(new_bill)
-db.session.commit()
-
 db.session.commit()

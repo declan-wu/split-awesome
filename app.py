@@ -188,19 +188,71 @@ def room_instance(room_id):
 @app.route('/room/<int:room_id>/summary', methods=['GET'])
 @cross_origin()
 def room_summary(room_id):
+    try:
+        summary = db.session.query(
+            Item.user_id,
+            func.sum(Item.unit_price).label('sum')
+        ).filter(Item.bill_id == room_id
+        ).join( User
+        ).group_by(Item.user_id
+        ).all()
+        return jsonify ([{'name': find_name(row[0]), 'amount': float(row[1])} for row in summary])
+    except:
+        return jsonify({"error": "database error on room_sumamry"})
 
-    summary = db.session.query(
-        Item.user_id,
-        func.sum(Item.unit_price).label('sum')
-    ).filter(Item.bill_id == room_id
-    ).join( User
-    ).group_by(Item.user_id
-    ).all()
+def find_user_bill_detail(user_id, bill_id):
+    try:
+        cart_items = db.session.query(Item
+            ).filter(Item.bill_id == bill_id, Item.user_id == user_id
+            ).all()
+        ret = []
+        subtotal = 0
+        for item in cart_items:
+            ret.append({'name': item.name, 'price': item.unit_price})
+            subtotal += item.unit_price
+        return (subtotal, ret)
+    except:
+        return jsonify({"error": "database error on find_user_bills"})
 
-    return jsonify ([{'name': find_name(row[0]), 'amount': float(row[1])} for row in summary])
+def find_bill_info(user_id, bill_id):
+    try:
+        bill = db.session.query(
+            Bill.id,
+            Bill.created_date
+        ).filter(Bill.id == bill_id
+        ).first()
 
+        user_bills = find_user_bill_detail(user_id, bill_id)
+        return {'id': bill_id, 'date': bill[1], 'items': user_bills[1], 'subtotal': user_bills[0]}
+    except:
+        return jsonify({"error": "database error on find_bill_info"})
 
-# JACKSON CREATED BELOW ROUTE
+@app.route('/user/<int:user_id>/bills', methods=['GET'])
+@cross_origin()
+def user_bills(user_id):
+    try: 
+        bills = db.session.query(
+            Item.bill_id,
+            func.count(Item.bill_id).label('count')
+        ).filter(Item.user_id == user_id
+        ).group_by(Item.bill_id
+        ).all()
+        bills_particiapted = [find_bill_info(user_id, bill[0]) for bill in reversed(bills)]
+        return jsonify(bills_particiapted)
+    except:
+        return jsonify({"error": "database error on user_bills"})
+
+@app.route('/rooms', methods=['GET'])
+@cross_origin()
+def get_all_rooms(): 
+    try:
+        bills = db.session.query(
+            Bill.id
+        ).all()
+        return jsonify([bill[0] for bill in bills])
+    except:
+        return jsonify({"error": "database error on get_rooms"})
+
 @app.route('/users/<u_id>/room/<int:room_id>/', methods=['GET'])
 @cross_origin()
 def cart_instance(u_id, room_id):
@@ -214,55 +266,6 @@ def cart_instance(u_id, room_id):
 
         res = {str(item.id): item.to_json() for item in cart_items}
         return jsonify(res)
-    except:
-        res = {"type" : "ERROR", "payload": "Cart has not been created"}
-        return jsonify(res)
-
-# JACKSON CREATED BELOW ROUTE
-@app.route('/kevin/', methods=['GET'])
-@cross_origin()
-def summary():
-
-    try:
-        print ("PRINT THIS SHIT")
-
-        itemQuerySum = db.session.query(Item.user_id, func.sum(Item.unit_price).label('total')) \
-             .join(User) \
-             .group_by(Item.user_id) \
-             .subquery()
-
-        summary_items = User.query.join(
-            itemQuerySum, User.id == itemQuerySum.c.user_id)
-        print(str(summary_items))
-        return 'hi'
-        # itemQuerySum = db.session.query(Item.user_id, func.sum(Item.unit_price).label('total')) \
-        #     .join(User, User.id = Item.user_id) \
-        #     .group_by(Item.user_id) \
-        #     .subquery() 
-
-        # summary_items = db.session.query(User) \
-        #     .join(itemQuerySum, User.id = itemQuerySum.user_id) as itemQuerySum \
-        #     .all() 
-        
-        # userDetails = []
-        # print ("PRINT THIS SHIT", summary_items[0][0])
-        # print ("PRINT THIS SHIT", summary_items[1][1])
-        # for user in summary_items:
-        #     userTemp = {}
-        #     userTemp['total'] = user.total
-        #     userTemp['user_id'] = user.user_id
-        #     # userTemp['user_bill'] = user.bill_id
-        #     # userTemp['user_uid'] = user.uid
-        #     # userTemp['first_name'] = user.first_name
-        #     # userTemp['last_name'] = user.last_name
-        #     # userTemp['email'] = user.email
-        #     userDetails.append(userTemp)
-
-        # print(userDetails)
-        # # print(summary_items)
-        # res = {'users': userDetails}
-        # # res = {str(user): user.id.to_json() for user in summary_items}
-        # return jsonify(res)
     except:
         res = {"type" : "ERROR", "payload": "Cart has not been created"}
         return jsonify(res)
