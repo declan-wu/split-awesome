@@ -40,6 +40,7 @@ def parser(test_arr):
                 price = re.search('[0-9]*\.[0-9]{2}', item).group()
                 quantity = re.search('[1-9]*\s', item).group().strip()
                 item = item_name_only(item, price)
+                item = re.sub(quantity, '', item).strip()
 
                 line_item['quantity'] = quantity 
                 line_item['item'] = item
@@ -59,7 +60,7 @@ def parser(test_arr):
 
             elif quantity_first(item):
                 quantity = re.search('[1-9]*\s', item).group().strip()
-                item = re.sub(quantity, '', item)
+                item = re.sub(quantity, '', item).strip()
 
                 line_item['quantity'] = quantity
                 line_item['item'] = item
