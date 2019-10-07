@@ -60,3 +60,29 @@ class Item(db.Model):
             'unit_price': self.unit_price,
             'is_checked': self.user_id != None 
         }
+
+class Balance(db.Model):
+
+    __tablename__ = 'items'
+
+    id = db.Column(db.Integer, primary_key=True, autoincrement=True)
+    name = db.Column(db.String(128), nullable=False)
+    unit_price = db.Column(db.Float, nullable=False)
+    bill_id = db.Column(db.Integer, db.ForeignKey('bills.id'), nullable=False)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=True)
+
+    def __init__(self, name, unit_price):
+        self.name = name
+        self.unit_price = unit_price
+    
+    def to_json(self):
+        return {
+            'id': self.id, 
+            'name': self.name,
+            'unit_price': self.unit_price,
+            'is_checked': self.user_id != None 
+        }
+
+
+
+

@@ -7,8 +7,6 @@ from flask_cors import CORS, cross_origin
 import json
 import base64
 
-# import gevent-websocket
-
 from gevent import monkey
 monkey.patch_all()
 
@@ -31,6 +29,7 @@ from action_types import action_types
 from sqlalchemy.sql import func
 
 # ------------------------------------------------------------------------------------ 
+#                           Model
 # ------------------------------------------------------------------------------------ 
 
 class Bill(db.Model):
@@ -93,8 +92,57 @@ class Item(db.Model):
         }
 
 # ------------------------------------------------------------------------------------ 
+#                           Helper Funcitons
 # ------------------------------------------------------------------------------------ 
 
+def find_name(user_id):
+    try:
+        name = db.session.query(User
+        ).filter(User.id == user_id
+        ).first()
+        return name.full_name
+    except:
+        print("User doesn't exist!")
+
+def find_user_bill_detail(user_id, bill_id):
+    try:
+        cart_items = db.session.query(Item
+            ).filter(Item.bill_id == bill_id, Item.user_id == user_id
+            ).all()
+        host = db.session.query(Bill).filter(Bill.id == bill_id).first()
+        group = db.session.query(
+            func.count(Item.id).label('count')
+        ).filter(Item.bill_id == bill_id
+        ).group_by(Item.user_id
+        ).all()
+        group_size = len(group)
+
+        ret = []
+        subtotal = 0
+        for item in cart_items:
+            ret.append({'name': item.name, 'price': item.unit_price})
+            subtotal += item.unit_price
+        res = {'subtotal': subtotal, 'items': ret, 'host': host.uid, 'group_size': group_size }
+        return res
+    except:
+        return jsonify({"error": "database error on find_user_bills"})
+
+def find_bill_info(user_id, bill_id):
+    try:
+        bill = db.session.query(
+            Bill.id,
+            Bill.created_date
+        ).filter(Bill.id == bill_id
+        ).first()
+        user_bills = find_user_bill_detail(user_id, bill_id)
+
+        return {'id': bill_id, 'date': bill[1], 'items': user_bills['items'], 'subtotal': user_bills['subtotal'], 'host': user_bills['host'], 'group_size': user_bills['group_size']}
+    except:
+        return jsonify({"error": "database error on find_bill_info"})
+
+# ------------------------------------------------------------------------------------ 
+#                           Routes
+# ------------------------------------------------------------------------------------ 
 
 @app.route('/', methods=['GET'])
 @cross_origin()
@@ -154,15 +202,6 @@ def snap():
         res = {"type" : "ERROR", "payload": "Image cannot be detected by AWS"} 
         return jsonify(res)
 
-def find_name(user_id):
-    try:
-        name = db.session.query(User
-        ).filter(User.id == user_id
-        ).first()
-        return name.full_name
-    except:
-        print("User doesn't exist!")
-
 @app.route('/room/<int:room_id>/', methods=['GET'])
 @cross_origin()
 def room_instance(room_id):
@@ -200,37 +239,12 @@ def room_summary(room_id):
     except:
         return jsonify({"error": "database error on room_sumamry"})
 
-def find_user_bill_detail(user_id, bill_id):
-    try:
-        cart_items = db.session.query(Item
-            ).filter(Item.bill_id == bill_id, Item.user_id == user_id
-            ).all()
-        ret = []
-        subtotal = 0
-        for item in cart_items:
-            ret.append({'name': item.name, 'price': item.unit_price})
-            subtotal += item.unit_price
-        return (subtotal, ret)
-    except:
-        return jsonify({"error": "database error on find_user_bills"})
-
-def find_bill_info(user_id, bill_id):
-    try:
-        bill = db.session.query(
-            Bill.id,
-            Bill.created_date
-        ).filter(Bill.id == bill_id
-        ).first()
-
-        user_bills = find_user_bill_detail(user_id, bill_id)
-        return {'id': bill_id, 'date': bill[1], 'items': user_bills[1], 'subtotal': user_bills[0]}
-    except:
-        return jsonify({"error": "database error on find_bill_info"})
-
-@app.route('/user/<int:user_id>/bills', methods=['GET'])
+@app.route('/user/<uid>/bills', methods=['GET'])
 @cross_origin()
-def user_bills(user_id):
+def user_bills(uid):
     try: 
+        user = db.session.query(User).filter(User.uid == uid).first()
+        user_id = user.id
         bills = db.session.query(
             Item.bill_id,
             func.count(Item.bill_id).label('count')
@@ -271,6 +285,10 @@ def cart_instance(u_id, room_id):
         return jsonify(res)
 
 
+# ------------------------------------------------------------------------------------ 
+#                           WebSockets
+# ------------------------------------------------------------------------------------ 
+
 @socketio.on('connect')
 def handle_connect():
     print("---------------------------")
@@ -292,6 +310,11 @@ def on_join(room):
 def on_leave(room):
     print('THIS IS THE LEAVE ROOM', room)
     leave_room(room)
+
+@socketio.on('finalize')
+def on_finalize(room):
+    print('The host finalize the bill', room)
+    socketio.emit('finalize', {'type': "redirect", 'payload': 'summary'}, include_self=False)
 
 @socketio.on('check')
 def handle_check(request, methods=['GET', 'POST']):
