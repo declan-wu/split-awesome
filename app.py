@@ -314,7 +314,7 @@ def on_leave(room):
 @socketio.on('finalize')
 def on_finalize(room):
     print('The host finalize the bill', room)
-    socketio.emit('finalize', {'type': "redirect", 'payload': 'summary'}, include_self=False)
+    socketio.emit('finalize', {'type': "redirect", 'payload': 'summary'}, include_self=False, room=room["room_id"])
 
 @socketio.on('check')
 def handle_check(request, methods=['GET', 'POST']):
